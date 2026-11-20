@@ -1,0 +1,25 @@
+# Java / Maven
+target/
+*.class
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# Node
+node_modules/
+dist/
+
+# Secrets
+.env
+.env.local
+infra/.env
+
+# OS
+.DS_Store
+Thumbs.db
