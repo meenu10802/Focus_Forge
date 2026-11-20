@@ -28,6 +28,10 @@
             <artifactId>focus-kafka</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.focusforge</groupId>
+            <artifactId>focus-outbox</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>

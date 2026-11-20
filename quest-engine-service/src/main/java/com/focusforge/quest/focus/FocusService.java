@@ -6,7 +6,7 @@ import com.focusforge.events.Topics;
 import com.focusforge.quest.focus.FocusDtos.AbandonResult;
 import com.focusforge.quest.focus.FocusDtos.CompletionResult;
 import com.focusforge.quest.focus.FocusDtos.SessionDto;
-import com.focusforge.quest.outbox.Outbox;
+import com.focusforge.outbox.Outbox;
 import com.focusforge.quest.quest.MicroTask;
 import com.focusforge.quest.quest.MicroTaskRepository;
 import com.focusforge.web.ApiException;

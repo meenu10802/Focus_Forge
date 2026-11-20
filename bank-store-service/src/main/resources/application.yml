@@ -26,9 +26,12 @@ spring:
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
         spring.json.trusted.packages: com.focusforge.events
     producer:
-      # Used for dead-letter publishing and (Phase 4) RewardRedeemedEvent.
+      # Used for the outbox relay (RewardRedeemedEvent) and dead-letter publishing.
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
 
 eureka:
   client:

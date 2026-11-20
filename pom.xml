@@ -22,6 +22,7 @@
         <module>common/focus-events</module>
         <module>common/focus-web</module>
         <module>common/focus-kafka</module>
+        <module>common/focus-outbox</module>
         <module>discovery-server</module>
         <module>api-gateway</module>
         <module>identity-rpg-service</module>
@@ -64,6 +65,11 @@
             <dependency>
                 <groupId>com.focusforge</groupId>
                 <artifactId>focus-kafka</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.focusforge</groupId>
+                <artifactId>focus-outbox</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

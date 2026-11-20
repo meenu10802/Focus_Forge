@@ -63,6 +63,13 @@ public class LedgerEntry {
         return e;
     }
 
+    public static LedgerEntry debit(UUID userId, long amount, long balanceAfter, String reason, UUID refId,
+                                    Instant at) {
+        var e = credit(userId, amount, balanceAfter, reason, refId, null, at);
+        e.type = Type.DEBIT;
+        return e;
+    }
+
     public UUID getId() {
         return id;
     }

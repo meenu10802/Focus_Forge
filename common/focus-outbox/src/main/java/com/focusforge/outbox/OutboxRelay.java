@@ -1,4 +1,4 @@
-package com.focusforge.quest.outbox;
+package com.focusforge.outbox;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;

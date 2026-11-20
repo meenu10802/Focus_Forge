@@ -12,7 +12,7 @@ Built with Spring Boot microservices (Eureka, Spring Cloud Gateway, Kafka, Postg
 | 1 | Identity, JWT auth at the gateway, live HUD | ✅ |
 | 2 | AI quest generation (Groq / Gemini, retry + circuit breaker + template fallback) | ✅ |
 | 3 | Focus loop: timer, idempotent completion, transactional outbox, Kafka fan-out, coin wallet | ✅ |
-| 4 | Reward store with optimistic locking | ⏳ |
+| 4 | Reward store: custom + global rewards, race-safe redemption (optimistic locking, idempotent) | ✅ |
 | 5 | Live notifications over SSE | ⏳ |
 | 6 | Panic button, streaks, leaderboard, heatmap | ⏳ |
 | 7 | Tracing, aggregated Swagger, rate limiting, containers, CI | ⏳ |
@@ -24,11 +24,12 @@ pom.xml                    parent POM (Spring Boot 3.3, Spring Cloud 2023.0, Jav
 common/focus-events/       shared Kafka event records + topic names
 common/focus-web/          shared servlet plumbing: @CurrentUser, RFC 7807 errors
 common/focus-kafka/        shared consumer error policy: retry x3, then <topic>.DLT
+common/focus-outbox/       shared transactional outbox + relay (quest-engine, bank-store)
 discovery-server/          :8761  Eureka registry
 api-gateway/               :8080  Spring Cloud Gateway: routing, CORS, JWT validation, RBAC
 identity-rpg-service/      :8081  register/login, player profile (HP/XP/level), Redis dashboard cache
 ai-quest-service/          :8082  stateless AI planner (Groq/Gemini), Resilience4j retry + circuit breaker
-bank-store-service/        :8083  Focus Coin wallet + append-only ledger (Kafka consumer)
+bank-store-service/        :8083  Focus Coin wallet + append-only ledger, reward catalogue and redemptions
 quest-engine-service/      :8084  quests, focus sessions, idempotent completion, transactional outbox -> Kafka
 frontend/                  :5173  Vite + React + TS + Tailwind + TanStack Query
 infra/docker-compose.yml   Postgres :5442, Redis :6380, Kafka :9092, Kafka UI :8090, Zipkin :9411
@@ -59,7 +60,7 @@ java -jar bank-store-service/target/bank-store-service-0.1.0-SNAPSHOT.jar
 cd frontend && npm install && npm run dev
 ```
 
-Open http://localhost:5173 and create a hero. The HUD shows level 1 with 100/100 HP. Click **+ New quest**, describe a goal, and you get 5–8 micro-tasks. Click **▶ Focus** on a task to start its timer, then **Complete & claim loot**. Coins, XP and HP land in the HUD a moment later through Kafka. Abandoning a session costs 10 HP.
+Open http://localhost:5173 and create a hero. The HUD shows level 1 with 100/100 HP. Click **+ New quest**, describe a goal, and you get 5–8 micro-tasks. Click **▶ Focus** on a task to start its timer, then **Complete & claim loot**. Coins, XP and HP land in the HUD a moment later through Kafka. Abandoning a session costs 10 HP. In the **Reward Store** tab you can spend coins on the starter rewards or create your own ("Bubble tea run, 70 coins").
 
 **AI keys are optional.** Without `GROQ_API_KEY` (free at console.groq.com), the planner serves a built-in 5-step study template, and the quest card shows an "Offline template" badge. To use Gemini instead, set `FOCUS_AI_PROVIDER=gemini` and `GEMINI_API_KEY`.
 
@@ -99,6 +100,11 @@ Routes for services that aren't running return **503** until those services regi
 | POST | `/api/quests/tasks/{id}/abandon` | Bearer | −10 HP; the task can be started again later |
 | GET | `/api/wallet/me` | Bearer | `{balance, updatedAt}` |
 | GET | `/api/wallet/me/transactions?page&size` | Bearer | Ledger entries, newest first |
+| GET | `/api/store/rewards` | Bearer | Global rewards plus your own, cheapest first |
+| POST/PUT/DELETE | `/api/store/rewards[/{id}]` | Bearer | Your custom rewards (`{name, description, emoji, price 1-100000, stock 0-10000}`); deleting only hides the reward, so history stays intact |
+| POST | `/api/store/rewards/{id}/redeem` | Bearer + `Idempotency-Key` | 200 with the redemption. 409 for *Out of Stock*, *Insufficient Coins* or *Busy*; the same key replays the result; 422 if the key was used for a different reward |
+| GET | `/api/store/redemptions` | Bearer | Your last 50 redemptions |
+| POST/PUT/DELETE | `/api/admin/rewards[/{id}]` | Bearer (ADMIN) | Global catalogue. ADMIN is checked at the gateway and again in the service |
 
 Internal only (the gateway never routes these): `POST /internal/ai/questline` and `POST /internal/ai/split` on ai-quest-service. Its circuit-breaker state is at `localhost:8082/actuator/health`.
 
@@ -148,6 +154,29 @@ browser ──POST /complete (Idempotency-Key: K)──▶ gateway (JWT ✓, X-U
   - Ledger rows are append-only, and the database rejects a negative balance with a `CHECK`.
   - The signed sum of a user's ledger always equals their wallet balance; `LedgerRepository.ledgerBalance` computes it so the two can be compared.
 - **Which events use the outbox.** Events that move coins or XP go through the transactional outbox. `LevelUpEvent` only triggers a celebration, so identity sends it after commit on a best-effort basis.
+
+### Redeeming the last "Cheat Meal" (race safety)
+
+Redeeming runs as **one local database transaction**. Stock and the wallet are in the same database, so a saga isn't needed: either every step happens or none does.
+
+```
+BEGIN
+  SELECT redemptions WHERE (user, Idempotency-Key)   → found? replay it (or 422 if it was a different reward)
+  SELECT reward (version v1)   stock > 0 ?           → else 409 Out of Stock
+  SELECT wallet (version w1)   balance >= price ?    → else 409 Insufficient Coins
+  UPDATE rewards SET stock = stock-1, version = v1+1 WHERE id = ? AND version = v1
+  UPDATE wallets SET balance = balance-price, version = w1+1 WHERE user_id = ? AND version = w1
+  INSERT redemption (UNIQUE user_id + idempotency_key), ledger DEBIT, outbox RewardRedeemedEvent
+COMMIT
+```
+
+- Twenty players racing for the last unit all read `stock = 1`. The first commit wins. Every other `UPDATE … WHERE version = v1` matches 0 rows, and Hibernate throws an optimistic-lock failure.
+- `RedemptionService` retries the whole transaction up to 4 times with random jitter. On the retry it reads the new state and returns a clean **409 Out of Stock**. Only under extreme contention does it give up with **409 Busy**.
+- `CHECK (stock >= 0)` and `CHECK (balance >= 0)` are a database-level backstop in case the application logic were ever wrong.
+- Proven in `StoreIntegrationTest`:
+  - 20 parallel buyers for the last unit: exactly 1 succeeds, stock ends at 0, and only one player is charged.
+  - One player sending 10 parallel redeems with coins for only one: one succeeds and the balance ends at 0, never negative.
+- **Idempotency here uses the database, not Redis** (quest-engine uses Redis). The `UNIQUE (user_id, idempotency_key)` constraint is the guard, and a redeem racing on the same key retries and then replays the existing row.
 - **Database per service.** `identity_db`, `bank_db` and `quest_db` are created by `infra/postgres/init.sql`. Each service runs its own schema migrations with Flyway.
 - **Events.** Topics are defined in `com.focusforge.events.Topics`. The Kafka key is always `userId`, and every event carries an `eventId` that consumers use to deduplicate.
 - **Config.** See `.env.example`. Secrets are never committed. The dev `JWT_SECRET` default must be overridden anywhere outside your own machine.

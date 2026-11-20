@@ -1,4 +1,4 @@
-package com.focusforge.quest.outbox;
+package com.focusforge.outbox;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

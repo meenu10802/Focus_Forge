@@ -1,4 +1,4 @@
-package com.focusforge.quest.outbox;
+package com.focusforge.outbox;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

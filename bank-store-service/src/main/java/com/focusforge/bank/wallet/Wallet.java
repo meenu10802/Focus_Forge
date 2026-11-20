@@ -39,6 +39,19 @@ public class Wallet {
         return balance;
     }
 
+    /** @throws IllegalStateException if the balance would go negative (callers check first). */
+    public long debit(long amount, Instant at) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("debit amount must be positive");
+        }
+        if (balance < amount) {
+            throw new IllegalStateException("insufficient balance");
+        }
+        balance -= amount;
+        updatedAt = at;
+        return balance;
+    }
+
     public UUID getUserId() {
         return userId;
     }

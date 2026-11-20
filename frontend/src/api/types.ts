@@ -93,6 +93,35 @@ export interface AbandonResult {
   eventId: string
 }
 
+/** bank-store-service reward. global = admin-curated; mine = your custom reward. */
+export interface Reward {
+  id: string
+  name: string
+  description: string
+  emoji: string
+  price: number
+  stock: number
+  global: boolean
+  mine: boolean
+}
+
+export interface RewardInput {
+  name: string
+  description: string
+  emoji: string
+  price: number
+  stock: number
+}
+
+export interface Redemption {
+  redemptionId: string
+  rewardId: string
+  rewardName: string
+  price: number
+  newBalance: number
+  redeemedAt: string
+}
+
 /** RFC 7807 body returned by every service and the gateway. */
 export interface ProblemDetail {
   type?: string
