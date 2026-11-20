@@ -4,37 +4,20 @@ import com.focusforge.identity.config.RpgClock;
 import com.focusforge.web.GatewayHeaders;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"eureka.client.enabled=false", "focus.rpg.admin-emails=boss@focus.dev"})
-@Testcontainers
-class IdentityApiIntegrationTest {
-
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16.4-alpine");
-
-    @Container
-    @ServiceConnection(name = "redis")
-    static GenericContainer<?> redis = new GenericContainer<>("redis:7.4-alpine").withExposedPorts(6379);
+class IdentityApiIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     TestRestTemplate http;

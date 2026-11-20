@@ -73,6 +73,23 @@ public class Quest {
         return task;
     }
 
+    /**
+     * Marks the quest COMPLETED once every top-level task is done.
+     * @return true if this call completed the quest
+     */
+    public boolean completeIfAllTasksDone() {
+        if (status != Status.ACTIVE) {
+            return false;
+        }
+        boolean allDone = tasks.stream()
+                .filter(t -> t.getParentTaskId() == null)
+                .allMatch(MicroTask::isCompleted);
+        if (allDone) {
+            status = Status.COMPLETED;
+        }
+        return allDone;
+    }
+
     public UUID getId() {
         return id;
     }

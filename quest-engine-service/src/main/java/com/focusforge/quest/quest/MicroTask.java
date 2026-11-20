@@ -91,8 +91,53 @@ public class MicroTask {
         this.createdAt = Instant.now();
     }
 
+    // --- state transitions -------------------------------------------------
+
+    public boolean isCompleted() {
+        return status == Status.COMPLETED;
+    }
+
+    /** PENDING/ABANDONED -> IN_PROGRESS. Idempotent if already in progress. */
+    public void start() {
+        if (status == Status.COMPLETED) {
+            throw new IllegalStateException("completed tasks can't be restarted");
+        }
+        status = Status.IN_PROGRESS;
+    }
+
+    /** Any non-completed state -> COMPLETED ("I already did it" is allowed without a timer). */
+    public void complete(Instant at) {
+        if (status == Status.COMPLETED) {
+            throw new IllegalStateException("already completed");
+        }
+        status = Status.COMPLETED;
+        completedAt = at;
+    }
+
+    /** IN_PROGRESS -> ABANDONED. */
+    public void abandon() {
+        if (status != Status.IN_PROGRESS) {
+            throw new IllegalStateException("only in-progress tasks can be abandoned");
+        }
+        status = Status.ABANDONED;
+    }
+
+    // --- accessors ---------------------------------------------------------
+
     public UUID getId() {
         return id;
+    }
+
+    public Quest getQuest() {
+        return quest;
+    }
+
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
     }
 
     public UUID getParentTaskId() {

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import type { Difficulty, Quest, QuestTask } from '../api/types'
 
 const difficultyStyle: Record<Difficulty, string> = {
@@ -7,15 +8,15 @@ const difficultyStyle: Record<Difficulty, string> = {
   HARD: 'bg-hp-low/10 text-hp-low',
 }
 
-function TaskRow({ task }: { task: QuestTask }) {
+function TaskRow({ task, questId }: { task: QuestTask; questId: string }) {
   const done = task.status === 'COMPLETED'
+  const running = task.status === 'IN_PROGRESS'
   return (
-    <li className="flex gap-3 rounded-lg border border-panel-edge bg-ink/40 p-3">
+    <li className={`flex gap-3 rounded-lg border bg-ink/40 p-3 ${running ? 'border-xp' : 'border-panel-edge'}`}>
       <span
-        aria-hidden="true"
-        title="Focus timer arrives in Phase 3"
+        aria-label={done ? 'Completed' : running ? 'In progress' : 'Not started'}
         className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border-2 text-[10px] ${
-          done ? 'border-hp bg-hp text-ink' : 'border-panel-edge'
+          done ? 'border-hp bg-hp text-ink' : running ? 'animate-pulse border-xp' : 'border-panel-edge'
         }`}
       >
         {done && '✓'}
@@ -28,6 +29,16 @@ function TaskRow({ task }: { task: QuestTask }) {
           </span>
         </div>
         {task.description && <p className="mt-1 text-sm text-muted">{task.description}</p>}
+        {!done && (
+          <Link
+            to={`/focus/${questId}/${task.id}`}
+            className={`mt-2 inline-block rounded-lg px-3 py-1.5 text-sm font-bold ${
+              running ? 'bg-xp text-white hover:bg-xp/90' : 'bg-panel-edge text-slate-100 hover:bg-xp hover:text-white'
+            }`}
+          >
+            {running ? '⏱ Resume focus' : '▶ Focus'}
+          </Link>
+        )}
       </div>
       <div className="shrink-0 text-right text-xs leading-5 tabular-nums text-muted">
         <div>⏱ {task.minutes}m</div>
@@ -98,7 +109,7 @@ export function QuestCard({ quest, highlight = false }: { quest: Quest; highligh
 
       <ol className="space-y-2">
         {quest.tasks.map((t) => (
-          <TaskRow key={t.id} task={t} />
+          <TaskRow key={t.id} task={t} questId={quest.id} />
         ))}
       </ol>
     </article>

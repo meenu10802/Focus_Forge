@@ -71,6 +71,22 @@ public class PlayerProfile {
         return false;
     }
 
+    /** Rewards for a completed micro-task: HP (capped at max) and XP with level roll-over. */
+    public LevelingPolicy.Progress applyCompletion(int hpRestored, int xpEarned, LocalDate today) {
+        refillIfNewDay(today);
+        hp = Math.min(maxHp, hp + Math.max(0, hpRestored));
+        var progress = LevelingPolicy.gain(level, xp, Math.max(0, xpEarned));
+        level = progress.level();
+        xp = progress.xpInLevel();
+        return progress;
+    }
+
+    /** Penalty for abandoning a focus session. HP floors at 0. */
+    public void drainHp(int amount, LocalDate today) {
+        refillIfNewDay(today);
+        hp = Math.max(0, hp - Math.max(0, amount));
+    }
+
     public UUID getUserId() {
         return userId;
     }

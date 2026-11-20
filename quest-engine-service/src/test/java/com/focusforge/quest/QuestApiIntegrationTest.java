@@ -8,18 +8,12 @@ import com.focusforge.web.ApiException;
 import com.focusforge.web.GatewayHeaders;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
 import java.util.Map;
@@ -29,17 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "eureka.client.enabled=false")
-@Testcontainers
-class QuestApiIntegrationTest {
-
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16.4-alpine");
-
-    @MockBean
-    AiQuestClient ai;
+class QuestApiIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     TestRestTemplate http;

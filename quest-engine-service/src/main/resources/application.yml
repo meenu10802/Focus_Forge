@@ -17,6 +17,18 @@ spring:
       hibernate.default_batch_fetch_size: 50
   flyway:
     enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6380}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
   cloud:
     loadbalancer:
       cache:
@@ -30,6 +42,10 @@ focus:
     read-timeout: 30s
   quests:
     list-limit: 20
+    abandon-hp-penalty: 10
+  outbox:
+    poll-interval-ms: 500
+    batch-size: 100
 
 eureka:
   client:

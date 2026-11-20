@@ -21,11 +21,13 @@
     <modules>
         <module>common/focus-events</module>
         <module>common/focus-web</module>
+        <module>common/focus-kafka</module>
         <module>discovery-server</module>
         <module>api-gateway</module>
         <module>identity-rpg-service</module>
         <module>ai-quest-service</module>
         <module>quest-engine-service</module>
+        <module>bank-store-service</module>
     </modules>
 
     <properties>
@@ -57,6 +59,11 @@
             <dependency>
                 <groupId>com.focusforge</groupId>
                 <artifactId>focus-web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.focusforge</groupId>
+                <artifactId>focus-kafka</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

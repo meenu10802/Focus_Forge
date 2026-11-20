@@ -59,6 +59,40 @@ export interface Quest {
   tasks: QuestTask[]
 }
 
+/** bank-store-service GET /api/wallet/me */
+export interface Wallet {
+  balance: number
+  updatedAt: string | null
+}
+
+/** quest-engine-service focus session. */
+export interface FocusSession {
+  sessionId: string
+  taskId: string
+  questId: string
+  taskTitle: string
+  plannedMinutes: number
+  startedAt: string
+  status: 'ACTIVE' | 'COMPLETED' | 'ABANDONED'
+}
+
+export interface CompletionResult {
+  taskId: string
+  questId: string
+  coinsEarned: number
+  xpEarned: number
+  hpRestored: number
+  focusMinutes: number
+  questCompleted: boolean
+  eventId: string
+}
+
+export interface AbandonResult {
+  taskId: string
+  hpLost: number
+  eventId: string
+}
+
 /** RFC 7807 body returned by every service and the gateway. */
 export interface ProblemDetail {
   type?: string
