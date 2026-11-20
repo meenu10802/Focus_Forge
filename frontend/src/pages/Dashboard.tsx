@@ -1,22 +1,41 @@
-import { GatewayStatus } from '../components/GatewayStatus'
+import { problemOf } from '../api/client'
+import { useAuth } from '../auth/authContext'
+import { useDashboard } from '../hooks/useDashboard'
 
 const upcoming = [
-  { phase: 1, title: 'Identity & HUD', body: 'Register, log in, and see live HP / XP / level from identity-rpg-service.' },
   { phase: 2, title: 'AI Quest Generator', body: '“What do you need to conquer today?” → a questline of 10-minute micro-tasks.' },
   { phase: 3, title: 'Focus Loop', body: 'Timer, idempotent task completion, coins minted via Kafka fan-out.' },
   { phase: 4, title: 'Reward Store', body: 'Spend Focus Coins on real-world treats with race-safe inventory.' },
+  { phase: 5, title: 'Live Dopamine Hits', body: 'Server-Sent Events animate your HUD the moment a reward lands.' },
 ]
 
 export function Dashboard() {
+  const { user } = useAuth()
+  const { data, error, refetch } = useDashboard()
+  const name = data?.displayName ?? user?.displayName ?? 'Adventurer'
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight">FocusForge</h1>
-          <p className="mt-1 text-muted">Turn overwhelming goals into micro-quests. Earn coins. Spend them on real life.</p>
-        </div>
-        <GatewayStatus />
+      <div className="mb-8">
+        <h1 className="text-3xl font-black tracking-tight">Welcome, {name}</h1>
+        <p className="mt-1 text-muted">
+          {data
+            ? `Level ${data.level} · ${data.xpForNextLevel - data.xp} XP to level ${data.level + 1}`
+            : 'Loading your stats…'}
+          {data?.role === 'ADMIN' && (
+            <span className="ml-2 rounded bg-xp-glow/15 px-1.5 py-0.5 text-xs font-bold text-xp-glow">ADMIN</span>
+          )}
+        </p>
       </div>
+
+      {error && (
+        <div role="alert" className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-hp-low/40 bg-hp-low/10 px-4 py-3 text-sm">
+          <span>Couldn’t load your profile: {problemOf(error).message}</span>
+          <button type="button" onClick={() => refetch()} className="font-semibold text-slate-100 hover:underline">
+            Retry
+          </button>
+        </div>
+      )}
 
       <section aria-labelledby="roadmap" className="grid gap-3 sm:grid-cols-2">
         <h2 id="roadmap" className="sr-only">

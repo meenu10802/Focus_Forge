@@ -5,6 +5,10 @@ spring:
   application:
     name: api-gateway
   cloud:
+    loadbalancer:
+      # Dev: pick up newly started services within seconds instead of ~1 min.
+      cache:
+        ttl: ${LB_CACHE_TTL:5s}
     gateway:
       globalcors:
         cors-configurations:
@@ -45,10 +49,25 @@ spring:
           predicates:
             - Path=/api/notify/**
 
+focus:
+  jwt:
+    # Must match identity-rpg-service. Dev default only — set JWT_SECRET in any real environment.
+    secret: ${JWT_SECRET:dev-only-focusforge-secret-change-me-0123456789}
+    issuer: focusforge
+  security:
+    # Reachable without a token (Ant-style patterns).
+    public-paths:
+      - /api/auth/**
+      - /api/health
+    # Path pattern -> role required.
+    role-paths:
+      "[/api/admin/**]": ADMIN
+
 eureka:
   client:
     service-url:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+    registry-fetch-interval-seconds: ${EUREKA_FETCH_INTERVAL:5}
   instance:
     prefer-ip-address: true
 

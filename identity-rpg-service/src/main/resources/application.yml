@@ -1,0 +1,49 @@
+server:
+  port: ${PORT:8081}
+
+spring:
+  application:
+    name: identity-rpg-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${POSTGRES_PORT:5442}/identity_db
+    username: ${POSTGRES_USER:focus}
+    password: ${POSTGRES_PASSWORD:focus}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6380}
+  cache:
+    type: redis
+
+focus:
+  jwt:
+    # Shared with api-gateway. Dev default only — set JWT_SECRET in any real environment.
+    secret: ${JWT_SECRET:dev-only-focusforge-secret-change-me-0123456789}
+    issuer: focusforge
+    ttl: 24h
+  rpg:
+    max-hp: 100
+    # Day boundary for the lazy daily HP reset.
+    timezone: ${FOCUS_TZ:Asia/Kolkata}
+    dashboard-cache-ttl: 10m
+    # Comma-separated emails that get the ADMIN role on registration.
+    admin-emails: ${FOCUS_ADMIN_EMAILS:}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

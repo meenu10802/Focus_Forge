@@ -1,28 +1,34 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { useAuth } from './auth/authContext'
+import { ProtectedRoute } from './auth/ProtectedRoute'
 import { HudBar } from './components/HudBar'
+import { useDashboard } from './hooks/useDashboard'
+import { AuthPage } from './pages/AuthPage'
 import { Dashboard } from './pages/Dashboard'
-import type { PlayerStats } from './api/types'
 
-// Placeholder until identity-rpg-service serves /api/profile/me (Phase 1).
-const demoStats: PlayerStats = {
-  displayName: 'Adventurer',
-  hp: 72,
-  maxHp: 100,
-  xp: 340,
-  xpForNextLevel: 520,
-  level: 3,
-  coins: 1250,
-  streakDays: 4,
+/** Authenticated shell: the HUD stays pinned above every in-game page. */
+function GameLayout() {
+  const { logout } = useAuth()
+  const { data } = useDashboard()
+  return (
+    <>
+      <HudBar stats={data} onLogout={logout} />
+      <Outlet />
+    </>
+  )
 }
 
 export default function App() {
   return (
-    <>
-      <HudBar stats={demoStats} />
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </>
+    <Routes>
+      <Route path="/login" element={<AuthPage mode="login" />} />
+      <Route path="/register" element={<AuthPage mode="register" />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<GameLayout />}>
+          <Route path="/" element={<Dashboard />} />
+        </Route>
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
