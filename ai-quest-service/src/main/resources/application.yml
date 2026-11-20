@@ -1,0 +1,73 @@
+server:
+  port: ${PORT:8082}
+
+spring:
+  application:
+    name: ai-quest-service
+
+focus:
+  ai:
+    # groq | gemini
+    provider: ${FOCUS_AI_PROVIDER:groq}
+    connect-timeout: 3s
+    # Upper bound on one AI call. Beyond this the call fails and Retry/CircuitBreaker take over.
+    read-timeout: ${FOCUS_AI_READ_TIMEOUT:12s}
+    max-goal-length: 300
+    groq:
+      api-key: ${GROQ_API_KEY:}
+      base-url: https://api.groq.com/openai/v1
+      model: ${GROQ_MODEL:llama-3.3-70b-versatile}
+    gemini:
+      api-key: ${GEMINI_API_KEY:}
+      base-url: https://generativelanguage.googleapis.com/v1beta
+      model: ${GEMINI_MODEL:gemini-2.0-flash}
+
+resilience4j:
+  retry:
+    instances:
+      aiProvider:
+        # 1 retry: LLMs occasionally return malformed JSON; a second sample usually fixes it.
+        max-attempts: 2
+        wait-duration: 500ms
+        retry-exceptions:
+          - org.springframework.web.client.RestClientException
+          - com.focusforge.ai.planner.AiResponseInvalidException
+        ignore-exceptions:
+          - io.github.resilience4j.circuitbreaker.CallNotPermittedException
+          - com.focusforge.ai.provider.AiNotConfiguredException
+  circuitbreaker:
+    instances:
+      aiProvider:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 4
+        failure-rate-threshold: 50
+        # Calls slower than this count as failures too (a degraded provider is a failing provider).
+        slow-call-duration-threshold: 10s
+        slow-call-rate-threshold: 80
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 2
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+        # A missing API key is a config issue, not an outage: don't let it skew the breaker.
+        ignore-exceptions:
+          - com.focusforge.ai.provider.AiNotConfiguredException
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoint:
+    health:
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakers,circuitbreakerevents,retries

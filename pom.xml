@@ -24,6 +24,8 @@
         <module>discovery-server</module>
         <module>api-gateway</module>
         <module>identity-rpg-service</module>
+        <module>ai-quest-service</module>
+        <module>quest-engine-service</module>
     </modules>
 
     <properties>
@@ -33,6 +35,9 @@
         <!-- 1.21.4+ negotiates the Docker API version; older releases fail against Docker Engine 29. -->
         <testcontainers.version>1.21.4</testcontainers.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Test JVM only: lets Mockito's Byte Buddy run on JDKs newer than it officially supports
+             (e.g. a local JDK 26). No effect on JDK 21. -->
+        <argLine>-Dnet.bytebuddy.experimental=true</argLine>
     </properties>
 
     <dependencyManagement>
